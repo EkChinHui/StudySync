@@ -41,6 +41,7 @@ const Quiz: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
   const [searchParams] = useSearchParams();
   const learningPathId = searchParams.get('learning_path_id') || searchParams.get('learningPathId') || '';
+  const isReviewMode = searchParams.get('review') === 'true';
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -51,8 +52,12 @@ const Quiz: React.FC = () => {
   const [result, setResult] = useState<QuizResult | null>(null);
 
   useEffect(() => {
-    loadQuiz();
-  }, [moduleId, learningPathId]);
+    if (isReviewMode) {
+      loadQuizResults();
+    } else {
+      loadQuiz();
+    }
+  }, [moduleId, learningPathId, isReviewMode]);
 
   const loadQuiz = async () => {
     try {
@@ -60,6 +65,22 @@ const Quiz: React.FC = () => {
       setQuiz(response.data);
     } catch (err) {
       showToast('Failed to load quiz', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadQuizResults = async () => {
+    try {
+      const response = await assessments.getQuizResults(moduleId!, learningPathId);
+      setQuiz({
+        assessment_id: response.data.assessment_id,
+        module_title: response.data.module_title,
+        questions: response.data.questions,
+      });
+      setResult(response.data);
+    } catch (err) {
+      showToast('Failed to load quiz results', 'error');
     } finally {
       setLoading(false);
     }
@@ -121,20 +142,32 @@ const Quiz: React.FC = () => {
         <div className="max-w-3xl mx-auto px-4 py-8">
           {/* Score Summary */}
           <div className="bg-white rounded-lg shadow-lg p-8 text-center mb-8">
-            <div className={`text-6xl mb-4 ${result.passed ? 'text-green-500' : 'text-red-500'}`}>
-              {result.passed ? '🎉' : '📚'}
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              {result.passed ? 'Congratulations!' : 'Keep Learning!'}
-            </h1>
+            {isReviewMode ? (
+              <>
+                <div className="text-6xl mb-4 text-blue-500">📋</div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Quiz Review</h1>
+                <p className="text-lg text-gray-600 mb-4">{quiz?.module_title}</p>
+              </>
+            ) : (
+              <>
+                <div className={`text-6xl mb-4 ${result.passed ? 'text-green-500' : 'text-red-500'}`}>
+                  {result.passed ? '🎉' : '📚'}
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                  {result.passed ? 'Congratulations!' : 'Keep Learning!'}
+                </h1>
+              </>
+            )}
             <p className="text-2xl text-gray-700 mb-4">
               Score: {result.correct_count} / {result.total_questions}
             </p>
-            <p className="text-gray-600 mb-6">
-              {result.passed
-                ? 'Great job! You have demonstrated understanding of this module.'
-                : 'Review the material and try again to improve your understanding.'}
-            </p>
+            {!isReviewMode && (
+              <p className="text-gray-600 mb-6">
+                {result.passed
+                  ? 'Great job! You have demonstrated understanding of this module.'
+                  : 'Review the material and try again to improve your understanding.'}
+              </p>
+            )}
             <button
               onClick={() => navigate(-1)}
               className="bg-blue-600 text-white py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors font-medium"

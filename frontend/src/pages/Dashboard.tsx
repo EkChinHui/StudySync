@@ -120,99 +120,203 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full animate-ping opacity-20"></div>
+            <div className="relative w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-gray-600">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
 
   if (error || !dashboard) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-600">{error || 'Dashboard not found'}</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <p className="text-red-600 font-medium">{error || 'Dashboard not found'}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Go back home
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{dashboard.topic}</h1>
-              <p className="text-gray-600 mt-1">Your personalized learning path</p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hidden sm:block">
+                  StudySync
+                </span>
+              </div>
+              <div className="h-6 w-px bg-gray-300 hidden sm:block" />
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold text-gray-900">{dashboard.topic}</h1>
+              </div>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleLoadAllSessions}
-                className="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors text-sm font-medium flex items-center gap-2"
               >
-                View Full Schedule
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="hidden sm:inline">Full Schedule</span>
               </button>
               <button
                 onClick={handleDownloadSchedule}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all text-sm font-medium flex items-center gap-2"
               >
-                Download Schedule
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span className="hidden sm:inline">Download</span>
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Progress Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-gray-600 text-sm mb-1">Completion</p>
-            <p className="text-3xl font-bold text-blue-600">
-              {Math.round(dashboard.progress.completion_percentage)}%
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-gray-600 text-sm mb-1">Sessions Done</p>
-            <p className="text-3xl font-bold text-green-600">
-              {dashboard.progress.sessions_completed}/{dashboard.progress.total_sessions}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-gray-600 text-sm mb-1">Avg Quiz Score</p>
-            <p className="text-3xl font-bold text-purple-600">
-              {Math.round(dashboard.progress.average_quiz_score * 100)}%
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-gray-600 text-sm mb-1">Quizzes Taken</p>
-            <p className="text-3xl font-bold text-orange-600">
-              {dashboard.progress.quizzes_taken}
-            </p>
-          </div>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Mobile Title */}
+        <div className="sm:hidden mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">{dashboard.topic}</h1>
+          <p className="text-gray-600 text-sm">Your personalized learning path</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Progress Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            {
+              label: 'Completion',
+              value: `${Math.round(dashboard.progress.completion_percentage)}%`,
+              icon: '📊',
+              color: 'from-blue-500 to-indigo-500',
+              bg: 'bg-blue-50',
+            },
+            {
+              label: 'Sessions Done',
+              value: `${dashboard.progress.sessions_completed}/${dashboard.progress.total_sessions}`,
+              icon: '✅',
+              color: 'from-emerald-500 to-teal-500',
+              bg: 'bg-emerald-50',
+            },
+            {
+              label: 'Quiz Average',
+              value: `${Math.round(dashboard.progress.average_quiz_score * 100)}%`,
+              icon: '🎯',
+              color: 'from-purple-500 to-pink-500',
+              bg: 'bg-purple-50',
+            },
+            {
+              label: 'Quizzes Taken',
+              value: dashboard.progress.quizzes_taken,
+              icon: '📝',
+              color: 'from-amber-500 to-orange-500',
+              bg: 'bg-amber-50',
+            },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center`}>
+                  <span className="text-lg">{stat.icon}</span>
+                </div>
+              </div>
+              <p className={`text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
+                {stat.value}
+              </p>
+              <p className="text-gray-500 text-sm mt-1">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Upcoming Sessions */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Upcoming Sessions</h2>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-gray-900">Upcoming Sessions</h2>
+              <span className="text-sm text-gray-500">{dashboard.upcoming_sessions.length} remaining</span>
+            </div>
             <div className="space-y-3">
               {dashboard.upcoming_sessions.length === 0 ? (
-                <p className="text-gray-600">No upcoming sessions</p>
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-600 font-medium">All sessions completed!</p>
+                  <p className="text-gray-500 text-sm">Great job on finishing your learning path.</p>
+                </div>
               ) : (
-                dashboard.upcoming_sessions.map((session) => (
+                dashboard.upcoming_sessions.map((session, index) => (
                   <div
                     key={session.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:border-blue-400 transition-colors cursor-pointer"
+                    className={`group p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                      index === 0
+                        ? 'border-blue-200 bg-blue-50 hover:border-blue-300'
+                        : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                    }`}
                     onClick={() => navigate(`/session/${session.id}`)}
                   >
-                    <h3 className="font-semibold text-gray-900">{session.module_title}</h3>
-                    {session.session_topic && session.session_topic !== session.module_title && (
-                      <p className="text-sm text-gray-700">{session.session_topic}</p>
-                    )}
-                    <p className="text-sm text-gray-600 mt-1">
-                      {new Date(session.scheduled_time).toLocaleString()}
-                    </p>
-                    <p className="text-sm text-gray-500">{session.duration_minutes} minutes</p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {index === 0 && (
+                            <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                              Next
+                            </span>
+                          )}
+                          <h3 className="font-semibold text-gray-900">{session.module_title}</h3>
+                        </div>
+                        {session.session_topic && session.session_topic !== session.module_title && (
+                          <p className="text-sm text-gray-600 mt-1">{session.session_topic}</p>
+                        )}
+                        <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {new Date(session.scheduled_time).toLocaleDateString()}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {session.duration_minutes} min
+                          </span>
+                        </div>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
                   </div>
                 ))
               )}
@@ -220,53 +324,82 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Curriculum */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Curriculum</h2>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-gray-900">Curriculum</h2>
+              <span className="text-sm text-gray-500">{dashboard.curriculum.modules?.length || 0} modules</span>
+            </div>
             <div className="space-y-3">
-              {dashboard.curriculum.modules?.map((module) => {
+              {dashboard.curriculum.modules?.map((module, index) => {
                 const quizStatus = dashboard.quiz_status?.[module.module_id];
                 const isCompleted = quizStatus?.completed;
                 const score = quizStatus?.score;
 
                 return (
-                  <div key={module.module_id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{module.title}</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {module.duration_hours} hours · {module.subtopics?.length || 0} topics
-                        </p>
+                  <div key={module.module_id} className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                          isCompleted
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {isCompleted ? (
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                            </svg>
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 truncate">{module.title}</h3>
+                          <p className="text-sm text-gray-500 mt-0.5">
+                            {module.duration_hours}h · {module.subtopics?.length || 0} topics
+                          </p>
+                        </div>
                       </div>
                       {isCompleted ? (
-                        <div className="ml-4 flex items-center gap-2">
-                          <span className="text-sm text-green-600 font-medium">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-lg">
                             {Math.round((score || 0) * 100)}%
                           </span>
                           <button
-                            onClick={() => navigate(`/quiz/${module.module_id}?learning_path_id=${dashboard.learning_path_id}`)}
-                            className="bg-gray-100 text-gray-700 text-sm px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/quiz/${module.module_id}?learning_path_id=${dashboard.learning_path_id}&review=true`);
+                            }}
+                            className="text-gray-500 hover:text-gray-700 text-sm px-3 py-2 rounded-lg hover:bg-gray-100 transition-all font-medium"
                           >
-                            Review Results
+                            Review
                           </button>
                         </div>
                       ) : (
                         <button
-                          onClick={() => navigate(`/quiz/${module.module_id}?learning_path_id=${dashboard.learning_path_id}`)}
-                          className="ml-4 bg-purple-600 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-purple-700 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/quiz/${module.module_id}?learning_path_id=${dashboard.learning_path_id}`);
+                          }}
+                          className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:shadow-md hover:shadow-purple-500/25 transition-all font-medium flex-shrink-0"
                         >
                           Take Quiz
                         </button>
                       )}
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       {module.subtopics?.slice(0, 3).map((topic, idx) => (
                         <span
                           key={idx}
-                          className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                          className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-lg"
                         >
                           {typeof topic === 'string' ? topic : topic.title}
                         </span>
                       ))}
+                      {module.subtopics && module.subtopics.length > 3 && (
+                        <span className="text-gray-400 text-xs px-2 py-1">
+                          +{module.subtopics.length - 3} more
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -278,15 +411,18 @@ const Dashboard: React.FC = () => {
 
       {/* Full Schedule Modal */}
       {showAllSessions && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Full Study Schedule</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Full Study Schedule</h2>
+                <p className="text-gray-500 text-sm mt-1">{allSessions.length} sessions total</p>
+              </div>
               <button
                 onClick={() => setShowAllSessions(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="w-10 h-10 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -294,44 +430,54 @@ const Dashboard: React.FC = () => {
             <div className="p-6 overflow-y-auto flex-1">
               {loadingSessions ? (
                 <div className="flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600"></div>
+                  <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {allSessions.map((session) => (
+                <div className="space-y-3">
+                  {allSessions.map((session, index) => (
                     <div
                       key={session.id}
-                      className={`border rounded-lg p-4 flex justify-between items-center ${session.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
-                        }`}
+                      className={`p-4 rounded-xl border-2 flex items-center justify-between transition-all ${
+                        session.completed
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-white border-gray-100 hover:border-gray-200'
+                      }`}
                     >
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{session.module_title}</h3>
-                        {session.session_topic && session.session_topic !== session.module_title && (
-                          <p className="text-sm text-gray-700">{session.session_topic}</p>
-                        )}
-                        {session.description && (
-                          <p className="text-sm text-gray-500 mt-1">{session.description}</p>
-                        )}
-                        <p className="text-sm text-gray-600 mt-1">
-                          {new Date(session.scheduled_time).toLocaleString()}
-                        </p>
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
+                          session.completed
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {session.completed ? (
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                            </svg>
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{session.module_title}</h3>
+                          {session.session_topic && session.session_topic !== session.module_title && (
+                            <p className="text-sm text-gray-600">{session.session_topic}</p>
+                          )}
+                          <p className="text-sm text-gray-500 mt-1">
+                            {new Date(session.scheduled_time).toLocaleString()} · {session.duration_minutes} min
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <span className="text-sm text-gray-500">{session.duration_minutes} min</span>
-                        {session.completed ? (
-                          <span className="text-green-600 font-medium text-sm">Completed</span>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setShowAllSessions(false);
-                              navigate(`/session/${session.id}`);
-                            }}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            Start
-                          </button>
-                        )}
-                      </div>
+                      {!session.completed && (
+                        <button
+                          onClick={() => {
+                            setShowAllSessions(false);
+                            navigate(`/session/${session.id}`);
+                          }}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:shadow-md transition-all font-medium"
+                        >
+                          Start
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -71,6 +71,11 @@ export const assessments = {
     apiClient.post(`/api/assessments/quiz/${assessmentId}/submit`, {
       responses,
     }),
+
+  getQuizResults: (moduleId: string, learningPathId: string) =>
+    apiClient.get(`/api/assessments/quiz/${moduleId}/results`, {
+      params: { learning_path_id: learningPathId },
+    }),
 };
 
 export const schedule = {

@@ -83,6 +83,74 @@ async def get_module_quiz(
     }
 
 
+@router.get("/quiz/{module_id}/results")
+async def get_quiz_results(
+    module_id: str,
+    learning_path_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get results for a completed quiz."""
+    assessment = db.query(Assessment).filter(
+        Assessment.learning_path_id == learning_path_id,
+        Assessment.module_id == module_id,
+        Assessment.assessment_type == "module_quiz"
+    ).first()
+
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+
+    if not assessment.completed:
+        raise HTTPException(status_code=400, detail="Quiz not completed yet")
+
+    questions = json.loads(assessment.questions) if assessment.questions else []
+    user_responses = json.loads(assessment.user_responses) if assessment.user_responses else {}
+
+    # Get module title from learning path
+    learning_path = db.query(LearningPath).filter(
+        LearningPath.id == learning_path_id
+    ).first()
+
+    module_title = module_id
+    if learning_path:
+        curriculum = json.loads(learning_path.curriculum) if learning_path.curriculum else {}
+        for module in curriculum.get("modules", []):
+            if module.get("module_id") == module_id:
+                module_title = module.get("title", module_id)
+                break
+
+    # Rebuild results from stored data
+    results = []
+    correct_count = 0
+    for idx, q in enumerate(questions):
+        question_id = q.get("id", str(idx))
+        user_answer = user_responses.get(question_id, "") or user_responses.get(f"q{idx}", "") or user_responses.get(str(idx), "")
+        correct_answer = q.get("correct_answer", "")
+        is_correct = user_answer.upper() == correct_answer.upper()
+        if is_correct:
+            correct_count += 1
+
+        results.append({
+            "question_id": question_id,
+            "question": q.get("question", ""),
+            "user_answer": user_answer,
+            "correct_answer": correct_answer,
+            "is_correct": is_correct,
+            "explanation": q.get("explanation", "")
+        })
+
+    return {
+        "assessment_id": assessment.id,
+        "module_id": module_id,
+        "module_title": module_title,
+        "questions": questions,
+        "score": assessment.score,
+        "correct_count": correct_count,
+        "total_questions": len(questions),
+        "passed": assessment.score >= 0.7 if assessment.score else False,
+        "results": results
+    }
+
+
 @router.post("/quiz/{assessment_id}/submit")
 async def submit_quiz(
     assessment_id: str,
