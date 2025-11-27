@@ -57,13 +57,16 @@ class StudySession(Base):
     learning_path_id = Column(String, ForeignKey("learning_paths.id"), nullable=False)
     module_id = Column(String, nullable=False)
     module_title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
+    session_topic = Column(String, nullable=True)  # Specific subtopic for this session
+    description = Column(Text, nullable=True)  # Detailed description of session content
+    learning_objectives = Column(Text, nullable=True)  # JSON list of objectives for this session
     scheduled_time = Column(DateTime, nullable=False)
     duration_minutes = Column(Integer, default=30)
     resources = Column(Text, nullable=True)  # JSON string
     completed = Column(Boolean, default=False)
     completed_at = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
+    session_number = Column(Integer, nullable=True)  # Position in sequence
 
     # Relationships
     learning_path = relationship("LearningPath", back_populates="sessions")

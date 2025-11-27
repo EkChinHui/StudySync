@@ -7,23 +7,15 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List as ListType, Literal
 import json
-import os
 
 from backend.database import get_db
 from backend.models import User, LearningPath, StudySession, Assessment
 from backend.services.progress_tracker import create_progress_tracker, ProgressEvent
 
-# Use ADK-based orchestrator if enabled, otherwise fallback to original
-USE_ADK = os.getenv("USE_ADK_AGENTS", "true").lower() == "true"
-
-if USE_ADK:
-    from backend.agents.adk.orchestrator import LearningPathRunner
-    orchestrator = LearningPathRunner()
-    print("[API] Using ADK-based orchestrator with ParallelAgent")
-else:
-    from backend.agents.orchestrator import OrchestratorAgent
-    orchestrator = OrchestratorAgent()
-    print("[API] Using original orchestrator")
+# Import the refactored LearningPathRunner (ADK Agent Team pattern)
+from backend.agents.runner import LearningPathRunner
+orchestrator = LearningPathRunner()
+print("[API] Using ADK Agent Team orchestrator")
 
 from datetime import datetime
 
@@ -109,10 +101,13 @@ async def create_learning_path(
                 learning_path_id=learning_path.id,
                 module_id=session_data["module_id"],
                 module_title=session_data["module_title"],
-                description=session_data.get("description"),
+                session_topic=session_data.get("session_topic"),
+                description=session_data.get("session_description") or session_data.get("description"),
+                learning_objectives=json.dumps(session_data.get("learning_objectives", [])),
                 scheduled_time=scheduled_time,
                 duration_minutes=session_data["duration_minutes"],
-                resources=json.dumps(session_data.get("resources", []))
+                resources=json.dumps(session_data.get("resources", [])),
+                session_number=session_data.get("session_number")
             )
             db.add(session)
 
@@ -231,10 +226,13 @@ async def create_learning_path_stream(
                     learning_path_id=learning_path.id,
                     module_id=session_data["module_id"],
                     module_title=session_data["module_title"],
-                    description=session_data.get("description"),
+                    session_topic=session_data.get("session_topic"),
+                    description=session_data.get("session_description") or session_data.get("description"),
+                    learning_objectives=json.dumps(session_data.get("learning_objectives", [])),
                     scheduled_time=scheduled_time,
                     duration_minutes=session_data["duration_minutes"],
-                    resources=json.dumps(session_data.get("resources", []))
+                    resources=json.dumps(session_data.get("resources", [])),
+                    session_number=session_data.get("session_number")
                 )
                 db.add(session)
 
@@ -347,8 +345,12 @@ async def get_learning_path(
             "id": session.id,
             "module_id": session.module_id,
             "module_title": session.module_title,
+            "session_topic": session.session_topic,
+            "description": session.description,
+            "learning_objectives": json.loads(session.learning_objectives) if session.learning_objectives else [],
             "scheduled_time": session.scheduled_time.isoformat(),
             "duration_minutes": session.duration_minutes,
+            "session_number": session.session_number,
             "completed": session.completed,
             "resources": json.loads(session.resources) if session.resources else []
         })
@@ -388,8 +390,12 @@ async def get_learning_path_sessions(
             "id": session.id,
             "module_id": session.module_id,
             "module_title": session.module_title,
+            "session_topic": session.session_topic,
+            "description": session.description,
+            "learning_objectives": json.loads(session.learning_objectives) if session.learning_objectives else [],
             "scheduled_time": session.scheduled_time.isoformat(),
             "duration_minutes": session.duration_minutes,
+            "session_number": session.session_number,
             "completed": session.completed,
             "resources": json.loads(session.resources) if session.resources else []
         }
@@ -456,6 +462,7 @@ async def get_dashboard(
             {
                 "id": s.id,
                 "module_title": s.module_title,
+                "session_topic": s.session_topic,
                 "scheduled_time": s.scheduled_time.isoformat(),
                 "duration_minutes": s.duration_minutes
             }

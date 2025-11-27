@@ -9,10 +9,9 @@ import json
 
 from backend.database import get_db
 from backend.models import LearningPath, Assessment
-from backend.agents.orchestrator import OrchestratorAgent
+from backend.agents.tools import generate_proficiency_assessment, evaluate_quiz_responses
 
 router = APIRouter()
-orchestrator = OrchestratorAgent()
 
 
 class ProficiencyAssessmentRequest(BaseModel):
@@ -26,15 +25,15 @@ class SubmitQuizRequest(BaseModel):
 
 
 @router.post("/proficiency")
-async def get_proficiency_assessment(
+async def get_proficiency_assessment_endpoint(
     request: ProficiencyAssessmentRequest
 ):
     """Get proficiency assessment questions for a topic."""
     try:
-        questions = await orchestrator.generate_proficiency_assessment(request.topic)
+        result = generate_proficiency_assessment(request.topic)
         return {
             "topic": request.topic,
-            "questions": questions
+            "questions": result.get("questions", [])
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating assessment: {str(e)}")
@@ -66,9 +65,18 @@ async def get_module_quiz(
 
     questions = json.loads(assessment.questions) if assessment.questions else []
 
+    # Get module title from curriculum
+    module_title = module_id  # Default to module_id
+    curriculum = json.loads(learning_path.curriculum) if learning_path.curriculum else {}
+    for module in curriculum.get("modules", []):
+        if module.get("module_id") == module_id:
+            module_title = module.get("title", module_id)
+            break
+
     return {
         "assessment_id": assessment.id,
         "module_id": module_id,
+        "module_title": module_title,
         "questions": questions,
         "completed": assessment.completed,
         "score": assessment.score if assessment.completed else None
@@ -98,9 +106,9 @@ async def submit_quiz(
         "questions": json.loads(assessment.questions) if assessment.questions else []
     }
 
-    # Evaluate quiz
+    # Evaluate quiz using tool function
     try:
-        evaluation = await orchestrator.evaluate_quiz(quiz_data, request.responses)
+        evaluation = evaluate_quiz_responses(quiz_data, request.responses)
 
         # Save results
         assessment.user_responses = json.dumps(request.responses)

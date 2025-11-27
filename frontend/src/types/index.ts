@@ -16,12 +16,18 @@ export interface LearningPath {
   created_at: string;
 }
 
+export interface Subtopic {
+  title: string;
+  description: string;
+  estimated_minutes: number;
+}
+
 export interface Module {
   module_id: string;
   title: string;
   duration_hours: number;
   learning_objectives: string[];
-  subtopics: string[];
+  subtopics: Subtopic[] | string[];
   prerequisites: string[];
   resources: Resource[];
 }

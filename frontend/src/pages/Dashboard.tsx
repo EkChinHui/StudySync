@@ -5,13 +5,20 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { learningPaths, schedule } from '../api/client';
+import { useToast } from '../components/Toast';
+
+interface Subtopic {
+  title: string;
+  description: string;
+  estimated_minutes: number;
+}
 
 interface Module {
   module_id: string;
   title: string;
   duration_hours: number;
   learning_objectives: string[];
-  subtopics: string[];
+  subtopics: Subtopic[];
   prerequisites: string[];
   resources: any[];
 }
@@ -20,11 +27,17 @@ interface StudySession {
   id: string;
   module_id: string;
   module_title: string;
+  session_topic?: string;
   description?: string;
   scheduled_time: string;
   duration_minutes: number;
   completed: boolean;
   resources: any[];
+}
+
+interface QuizStatus {
+  completed: boolean;
+  score: number | null;
 }
 
 interface DashboardData {
@@ -40,12 +53,14 @@ interface DashboardData {
   curriculum: {
     modules: Module[];
   };
+  quiz_status: Record<string, QuizStatus>;
   upcoming_sessions: StudySession[];
 }
 
 const Dashboard: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -81,7 +96,7 @@ const Dashboard: React.FC = () => {
       setAllSessions(response.data);
       setShowAllSessions(true);
     } catch (err) {
-      alert('Failed to load full schedule');
+      showToast('Failed to load full schedule', 'error');
     } finally {
       setLoadingSessions(false);
     }
@@ -97,8 +112,9 @@ const Dashboard: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      showToast('Schedule downloaded', 'success');
     } catch (err) {
-      alert('Failed to download schedule');
+      showToast('Failed to download schedule', 'error');
     }
   };
 
@@ -190,6 +206,9 @@ const Dashboard: React.FC = () => {
                     onClick={() => navigate(`/session/${session.id}`)}
                   >
                     <h3 className="font-semibold text-gray-900">{session.module_title}</h3>
+                    {session.session_topic && session.session_topic !== session.module_title && (
+                      <p className="text-sm text-gray-700">{session.session_topic}</p>
+                    )}
                     <p className="text-sm text-gray-600 mt-1">
                       {new Date(session.scheduled_time).toLocaleString()}
                     </p>
@@ -204,24 +223,54 @@ const Dashboard: React.FC = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Curriculum</h2>
             <div className="space-y-3">
-              {dashboard.curriculum.modules?.map((module) => (
-                <div key={module.module_id} className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900">{module.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {module.duration_hours} hours " {module.subtopics.length} topics
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {module.subtopics.slice(0, 3).map((topic, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                      >
-                        {topic}
-                      </span>
-                    ))}
+              {dashboard.curriculum.modules?.map((module) => {
+                const quizStatus = dashboard.quiz_status?.[module.module_id];
+                const isCompleted = quizStatus?.completed;
+                const score = quizStatus?.score;
+
+                return (
+                  <div key={module.module_id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{module.title}</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {module.duration_hours} hours · {module.subtopics?.length || 0} topics
+                        </p>
+                      </div>
+                      {isCompleted ? (
+                        <div className="ml-4 flex items-center gap-2">
+                          <span className="text-sm text-green-600 font-medium">
+                            {Math.round((score || 0) * 100)}%
+                          </span>
+                          <button
+                            onClick={() => navigate(`/quiz/${module.module_id}?learning_path_id=${dashboard.learning_path_id}`)}
+                            className="bg-gray-100 text-gray-700 text-sm px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            Review Results
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => navigate(`/quiz/${module.module_id}?learning_path_id=${dashboard.learning_path_id}`)}
+                          className="ml-4 bg-purple-600 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                          Take Quiz
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {module.subtopics?.slice(0, 3).map((topic, idx) => (
+                        <span
+                          key={idx}
+                          className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                        >
+                          {typeof topic === 'string' ? topic : topic.title}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -257,6 +306,9 @@ const Dashboard: React.FC = () => {
                     >
                       <div>
                         <h3 className="font-semibold text-gray-900">{session.module_title}</h3>
+                        {session.session_topic && session.session_topic !== session.module_title && (
+                          <p className="text-sm text-gray-700">{session.session_topic}</p>
+                        )}
                         {session.description && (
                           <p className="text-sm text-gray-500 mt-1">{session.description}</p>
                         )}

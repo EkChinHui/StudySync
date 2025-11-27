@@ -4,16 +4,6 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { assessments } from '../api/client';
-
-interface Question {
-  question: string;
-  type?: string;
-  options: Record<string, string> | string[];
-  difficulty?: string;
-  correct_answer?: string;
-  explanation?: string;
-}
 
 interface ProgressMessage {
   message: string;
@@ -22,12 +12,10 @@ interface ProgressMessage {
 }
 
 const Onboarding: React.FC = () => {
-  const [step, setStep] = useState<'topic' | 'assessment' | 'commitment' | 'creating'>('topic');
+  const [step, setStep] = useState<'topic' | 'commitment' | 'creating'>('topic');
   const [topic, setTopic] = useState('');
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
   const [commitmentLevel, setCommitmentLevel] = useState('moderate');
-  const [proficiencyLevel, setProficiencyLevel] = useState('');
+  const [proficiencyLevel, setProficiencyLevel] = useState('beginner');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,24 +25,8 @@ const Onboarding: React.FC = () => {
 
   const navigate = useNavigate();
 
-  const handleTopicSubmit = async () => {
+  const handleTopicSubmit = () => {
     if (!topic.trim()) return;
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await assessments.getProficiency(topic);
-      setQuestions(response.data.questions);
-      setStep('assessment');
-    } catch (err: any) {
-      setError('Failed to load assessment questions');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAssessmentSubmit = () => {
     setStep('commitment');
   };
 
@@ -65,30 +37,18 @@ const Onboarding: React.FC = () => {
     setProgressMessages([]);
     setCurrentPhase('');
 
-    // Convert answers to assessment responses format
-    const assessmentResponses = questions.map((q, idx) => ({
-      question: q.question,
-      user_answer: answers[idx],
-      is_correct: false, // Backend will evaluate
-    }));
-
     // Build query params for SSE endpoint
     const params = new URLSearchParams({
       topic,
       commitment_level: commitmentLevel,
+      proficiency_level: proficiencyLevel,
     });
 
-    if (proficiencyLevel) {
-      params.append('proficiency_level', proficiencyLevel);
-    }
     if (startDate) {
       params.append('start_date', startDate);
     }
     if (endDate) {
       params.append('end_date', endDate);
-    }
-    if (assessmentResponses.length > 0) {
-      params.append('assessment_responses', JSON.stringify(assessmentResponses));
     }
 
     // Connect to SSE endpoint
@@ -97,6 +57,7 @@ const Onboarding: React.FC = () => {
     );
 
     eventSource.onmessage = (event) => {
+      console.log('[SSE] Received event:', event.data);
       try {
         const data = JSON.parse(event.data);
 
@@ -124,8 +85,13 @@ const Onboarding: React.FC = () => {
       }
     };
 
+    eventSource.onopen = () => {
+      console.log('[SSE] Connection opened');
+    };
+
     eventSource.onerror = (err) => {
-      console.error('EventSource error:', err);
+      console.error('[SSE] EventSource error:', err);
+      console.log('[SSE] ReadyState:', eventSource.readyState);
       eventSource.close();
       setError('Connection lost. Please try again.');
       setLoading(false);
@@ -147,8 +113,7 @@ const Onboarding: React.FC = () => {
           {/* Progress bar */}
           <div className="flex items-center mb-8">
             <div className={`flex-1 h-2 rounded ${step !== 'topic' ? 'bg-blue-600' : 'bg-gray-200'}`} />
-            <div className={`flex-1 h-2 rounded mx-2 ${step === 'commitment' || step === 'creating' ? 'bg-blue-600' : 'bg-gray-200'}`} />
-            <div className={`flex-1 h-2 rounded ${step === 'creating' ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={`flex-1 h-2 rounded ml-2 ${step === 'creating' ? 'bg-blue-600' : 'bg-gray-200'}`} />
           </div>
 
           {error && (
@@ -175,28 +140,28 @@ const Onboarding: React.FC = () => {
 
               <button
                 onClick={handleTopicSubmit}
-                disabled={!topic.trim() || loading}
+                disabled={!topic.trim()}
                 className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
               >
-                {loading ? 'Loading...' : 'Continue'}
+                Continue
               </button>
             </div>
           )}
 
-          {/* Step 2: Proficiency Assessment */}
-          {step === 'assessment' && (
+          {/* Step 2: Proficiency, Commitment & Schedule */}
+          {step === 'commitment' && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                  Quick Assessment
+                  Customize Your Learning Path
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  Tell us about your experience level and answer a few questions
+                  Tell us about your experience and schedule preferences
                 </p>
               </div>
 
               {/* Proficiency Level Selection */}
-              <div className="space-y-4 mb-8">
+              <div className="space-y-4 mb-6">
                 <h3 className="font-medium text-gray-800">What's your experience level with {topic}?</h3>
                 {[
                   { value: 'beginner', title: 'Beginner', description: 'New to this topic, little to no prior experience' },
@@ -233,70 +198,6 @@ const Onboarding: React.FC = () => {
                     </div>
                   </label>
                 ))}
-              </div>
-
-              {/* Quiz Questions */}
-              <h3 className="font-medium text-gray-800 mb-4">Answer these questions to help us calibrate your curriculum:</h3>
-
-              {questions.map((question, idx) => (
-                <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                  <p className="font-medium text-gray-800 mb-3">
-                    {idx + 1}. {question.question}
-                  </p>
-                  <div className="space-y-2">
-                    {Array.isArray(question.options) ? (
-                      question.options.map((option, optIdx) => (
-                        <label key={optIdx} className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="radio"
-                            name={`question-${idx}`}
-                            value={option}
-                            checked={answers[idx] === option}
-                            onChange={(e) => setAnswers({ ...answers, [idx]: e.target.value })}
-                            className="w-4 h-4 text-blue-600"
-                          />
-                          <span className="text-gray-700">{option}</span>
-                        </label>
-                      ))
-                    ) : (
-                      Object.entries(question.options).map(([key, value]) => (
-                        <label key={key} className="flex items-center space-x-3 cursor-pointer">
-                          <input
-                            type="radio"
-                            name={`question-${idx}`}
-                            value={key}
-                            checked={answers[idx] === key}
-                            onChange={(e) => setAnswers({ ...answers, [idx]: e.target.value })}
-                            className="w-4 h-4 text-blue-600"
-                          />
-                          <span className="text-gray-700">{value}</span>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              <button
-                onClick={handleAssessmentSubmit}
-                disabled={Object.keys(answers).length < questions.length || !proficiencyLevel}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
-              >
-                Continue
-              </button>
-            </div>
-          )}
-
-          {/* Step 3: Commitment Level & Schedule */}
-          {step === 'commitment' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                  Schedule & Commitment
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  Customize your learning schedule
-                </p>
               </div>
 
               {/* Date Selection */}

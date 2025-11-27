@@ -1,6 +1,6 @@
-"""LLM service using Anthropic Claude."""
+"""LLM service using OpenAI GPT-4.1."""
 
-from anthropic import Anthropic
+from openai import OpenAI
 from backend.config import get_settings
 from typing import List, Dict, Optional
 import json
@@ -9,28 +9,138 @@ settings = get_settings()
 
 
 class LLMService:
-    """Service for interacting with Anthropic Claude API."""
+    """Service for interacting with OpenAI API."""
 
     def __init__(self):
-        """Initialize Anthropic client."""
-        api_key = settings.anthropic_api_key
+        """Initialize OpenAI client."""
+        api_key = settings.openai_api_key
         if not api_key or api_key == "":
-            raise ValueError(f"ANTHROPIC_API_KEY is empty or not set! Check backend/.env file")
+            raise ValueError(f"OPENAI_API_KEY is empty or not set! Check backend/.env file")
 
-        print(f"[LLMService] Initializing with API key: {api_key[:20]}...")
+        print(f"[LLMService] Initializing with OpenAI API key: {api_key[:20]}...")
 
         try:
-            self.client = Anthropic(api_key=api_key)
-            self.model = "claude-sonnet-4-5-20250929"
-            # self.model = "claude-haiku-4-5-20251001"
-            print(f"[LLMService] Successfully initialized Anthropic client")
+            self.client = OpenAI(api_key=api_key)
+            self.model = "gpt-4.1"
+            print(f"[LLMService] Successfully initialized OpenAI client with model: {self.model}")
         except Exception as e:
-            print(f"[LLMService] ERROR initializing Anthropic client: {e}")
+            print(f"[LLMService] ERROR initializing OpenAI client: {e}")
             raise
+
+    def _call_llm(self, prompt: str, max_tokens: int = 2000) -> str:
+        """Make a call to the OpenAI API."""
+        response = self.client.chat.completions.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+
+    def _extract_json(self, content: str) -> str:
+        """Extract JSON from markdown code blocks if present."""
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0].strip()
+        return content
+
+    def analyze_topic_scope(self, topic: str, proficiency_level: str) -> Dict:
+        """Analyze a topic to determine its scope and key learning areas."""
+        prompt = f"""Analyze the learning topic: {topic}
+
+For a {proficiency_level} learner, provide:
+1. A brief scope description (what this topic covers)
+2. The key learning areas (main subtopics to master)
+3. Estimated number of modules needed
+4. Complexity level
+5. Any prerequisite knowledge needed
+
+Format your response as JSON:
+{{
+    "topic": "{topic}",
+    "scope": "Brief description of what this topic covers",
+    "key_areas": ["Area 1", "Area 2", "Area 3", ...],
+    "estimated_modules": <number>,
+    "complexity": "low|medium|high",
+    "prerequisites_needed": ["Prerequisite 1", ...]
+}}
+
+Be practical and focus on what's actually needed for a {proficiency_level} learner."""
+
+        try:
+            content = self._call_llm(prompt, max_tokens=800)
+            content = self._extract_json(content)
+            result = json.loads(content)
+            print(f"[LLMService] Analyzed topic scope: {len(result.get('key_areas', []))} key areas")
+            return result
+        except Exception as e:
+            print(f"Error analyzing topic scope: {e}")
+            return {
+                "topic": topic,
+                "scope": f"Introduction to {topic}",
+                "key_areas": [f"{topic} Fundamentals", f"{topic} Core Concepts", f"Applied {topic}"],
+                "estimated_modules": 5,
+                "complexity": "medium",
+                "prerequisites_needed": []
+            }
+
+    def generate_module_outline(self, topic: str, module_title: str, proficiency_level: str, module_number: int, total_modules: int) -> Dict:
+        """Generate a detailed outline for a single curriculum module."""
+        prompt = f"""Create a detailed module outline for:
+
+Main Topic: {topic}
+Module Title: {module_title}
+Module Number: {module_number} of {total_modules}
+Target Level: {proficiency_level}
+
+Generate a module with:
+- 2-3 learning objectives
+- 3-5 subtopics (each becomes a study session)
+- Realistic time estimates
+
+Format as JSON:
+{{
+    "module_id": "m{module_number}",
+    "title": "{module_title}",
+    "description": "Brief overview of what this module covers",
+    "duration_hours": <number>,
+    "learning_objectives": ["Objective 1", "Objective 2"],
+    "subtopics": [
+        {{
+            "title": "Subtopic Title",
+            "description": "What will be covered in this session",
+            "estimated_minutes": 30
+        }}
+    ],
+    "prerequisites": []
+}}
+
+Make it practical and appropriate for a {proficiency_level} learner."""
+
+        try:
+            content = self._call_llm(prompt, max_tokens=1000)
+            content = self._extract_json(content)
+            result = json.loads(content)
+            print(f"[LLMService] Generated module outline: {module_title} with {len(result.get('subtopics', []))} subtopics")
+            return result
+        except Exception as e:
+            print(f"Error generating module outline: {e}")
+            return {
+                "module_id": f"m{module_number}",
+                "title": module_title,
+                "description": f"Introduction to {module_title}",
+                "duration_hours": 2,
+                "learning_objectives": [f"Understand {module_title} concepts", f"Apply {module_title} in practice"],
+                "subtopics": [
+                    {"title": f"{module_title} Basics", "description": "Foundational concepts", "estimated_minutes": 30},
+                    {"title": f"{module_title} in Practice", "description": "Hands-on application", "estimated_minutes": 30}
+                ],
+                "prerequisites": [f"m{module_number-1}"] if module_number > 1 else []
+            }
 
     def generate_curriculum(self, topic: str, proficiency_level: str, commitment_level: str, duration_weeks: Optional[float] = None) -> Dict:
         """Generate a learning curriculum for the given topic."""
-        
+
         duration_context = ""
         if duration_weeks:
             duration_context = f"""
@@ -80,22 +190,10 @@ Format your response as JSON with this structure:
 Keep it practical and focused on the essentials for a {proficiency_level} learner."""
 
         try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}]
-            )
-
-            content = response.content[0].text
+            content = self._call_llm(prompt, max_tokens=2000)
             print(f"[LLMService] Raw curriculum response length: {len(content)}")
 
-            # Extract JSON from markdown code blocks if present
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
-
-            # Parse JSON from response
+            content = self._extract_json(content)
             curriculum = json.loads(content)
             print(f"[LLMService] Successfully parsed curriculum with {len(curriculum.get('modules', []))} modules")
             return curriculum
@@ -103,12 +201,10 @@ Keep it practical and focused on the essentials for a {proficiency_level} learne
         except Exception as e:
             print(f"Error generating curriculum: {e}")
             print(f"Raw content: {content[:200] if 'content' in locals() else 'N/A'}...")
-            # Return fallback curriculum
             return self._fallback_curriculum(topic)
 
     def get_resources_for_module(self, module_title: str, subtopics: List[str]) -> List[Dict]:
         """Generate specific, high-quality learning resources for a module."""
-        # Handle if subtopics are objects (dicts) or strings
         subtopic_names = []
         for s in subtopics:
             if isinstance(s, dict):
@@ -117,7 +213,7 @@ Keep it practical and focused on the essentials for a {proficiency_level} learne
                 subtopic_names.append(str(s))
 
         prompt = f"""Find 3-5 specific, high-quality learning resources for:
-        
+
 Module: {module_title}
 Topics: {', '.join(subtopic_names)}
 
@@ -143,20 +239,8 @@ IMPORTANT:
 - If you are unsure of a specific URL, provide a very specific search query URL as a fallback, but prioritize direct links."""
 
         try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1000,
-                messages=[{"role": "user", "content": prompt}]
-            )
-
-            content = response.content[0].text
-
-            # Extract JSON from markdown code blocks if present
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
-
+            content = self._call_llm(prompt, max_tokens=1000)
+            content = self._extract_json(content)
             resources = json.loads(content)
             print(f"[LLMService] Successfully generated {len(resources)} resources")
             return resources
@@ -167,7 +251,6 @@ IMPORTANT:
 
     def generate_quiz(self, module_title: str, subtopics: List[str], num_questions: int = 5) -> List[Dict]:
         """Generate quiz questions for a module."""
-        # Handle if subtopics are objects (dicts) or strings
         subtopic_names = []
         for s in subtopics:
             if isinstance(s, dict):
@@ -210,19 +293,8 @@ Format as valid JSON array with proper escaping:
 Make questions practical and test understanding, not just memorization."""
 
         try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1500,
-                messages=[{"role": "user", "content": prompt}]
-            )
-
-            content = response.content[0].text
-
-            # Extract JSON from markdown code blocks if present
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
+            content = self._call_llm(prompt, max_tokens=1500)
+            content = self._extract_json(content)
 
             try:
                 questions = json.loads(content)
@@ -258,20 +330,8 @@ Format as JSON array:
 Make questions practical and assess real understanding."""
 
         try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1200,
-                messages=[{"role": "user", "content": prompt}]
-            )
-
-            content = response.content[0].text
-
-            # Extract JSON from markdown code blocks if present
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
-
+            content = self._call_llm(prompt, max_tokens=1200)
+            content = self._extract_json(content)
             questions = json.loads(content)
             print(f"[LLMService] Successfully generated {len(questions)} proficiency questions")
             return questions
@@ -283,7 +343,6 @@ Make questions practical and assess real understanding."""
 
     def generate_study_guide(self, module_title: str, subtopics: List[str]) -> str:
         """Generate a markdown study guide for a module."""
-        # Handle if subtopics are objects (dicts) or strings
         subtopic_names = []
         for s in subtopics:
             if isinstance(s, dict):
@@ -305,13 +364,8 @@ Format as markdown with:
 Keep it under 500 words and actionable."""
 
         try:
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1000,
-                messages=[{"role": "user", "content": prompt}]
-            )
-
-            return response.content[0].text
+            content = self._call_llm(prompt, max_tokens=1000)
+            return content
 
         except Exception as e:
             print(f"Error generating study guide: {e}")

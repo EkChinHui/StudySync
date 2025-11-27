@@ -26,8 +26,9 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
 
-    # LLM API (Anthropic Claude)
+    # LLM API Keys
     anthropic_api_key: str = ""
+    openai_api_key: str = ""
 
     # YouTube Data API
     youtube_api_key: str = ""
