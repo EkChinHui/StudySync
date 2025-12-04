@@ -10,6 +10,10 @@ A lightweight multi-agent learning system for working professionals, featuring p
 - **Progress Tracking**: Dashboard with completion metrics and upcoming sessions
 - **AI-Generated Content**: Custom quizzes and study materials powered by Anthropic Claude
 
+## Demo Video
+
+[![StudySync Demo](https://img.youtube.com/vi/WtnWqpxsJ_Q/0.jpg)](https://www.youtube.com/watch?v=WtnWqpxsJ_Q)
+
 ## Technology Stack
 
 ### Backend
