@@ -12,7 +12,7 @@ A lightweight multi-agent learning system for working professionals, featuring p
 
 ## Demo Video
 
-[![StudySync Demo](https://img.youtube.com/vi/WtnWqpxsJ_Q/0.jpg)](https://www.youtube.com/watch?v=WtnWqpxsJ_Q)
+https://github.com/user-attachments/assets/5bb6d0c7-7ab4-4427-9c4d-d39e6aa58ea9
 
 ## Technology Stack
 
